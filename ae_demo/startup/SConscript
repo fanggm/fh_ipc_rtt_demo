@@ -1,0 +1,10 @@
+Import('rtconfig')
+from building import *
+cwd  = GetCurrentDir()
+
+src	= Glob('*.c')
+path_inc = [cwd]
+
+group = DefineGroup('startup', src, depend = [''], LOCAL_CPPPATH = path_inc)
+
+Return('group')

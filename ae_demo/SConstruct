@@ -1,0 +1,82 @@
+import os
+import sys
+import rtconfig
+import subprocess
+
+if os.getenv('RTT_ROOT'):
+    RTT_ROOT = os.getenv('RTT_ROOT')
+else:
+    RTT_ROOT = os.path.normpath(os.getcwd() + '../../../fh86xx-sdk/rt-thread/')
+
+if os.getenv('RTT_PLATFORM_ROOT'):
+    RTT_PLATFORM_ROOT = os.getenv('RTT_PLATFORM_ROOT')
+else:
+    RTT_PLATFORM_ROOT = ''
+
+if os.getenv('SDK_ROOT'):
+    SDK_ROOT = os.getenv('SDK_ROOT')
+else:
+    SDK_ROOT = os.path.normpath(os.getcwd() + '../../../fh86xx-sdk')
+
+if os.getenv('RT_CONFIG_H'):
+    RT_CONFIG_H = os.getenv('RT_CONFIG_H')
+else:
+    RT_CONFIG_H = os.path.normpath(os.getcwd() + '/rtconfig.h')
+
+#new add by zhangy to make rtconfig.h could add #include...
+rtconfig.PLATFORM_DEF = [ SDK_ROOT + '/platform']   
+
+APP_ROOT = os.path.normpath(os.getcwd())
+
+sys.path = sys.path + [os.path.join(RTT_ROOT, 'tools')]
+from building import *
+
+TARGET = 'rtthread.' + rtconfig.TARGET_EXT
+
+env = Environment(tools = ['mingw'],
+    AS = rtconfig.AS, ASFLAGS = rtconfig.AFLAGS,
+    CC = rtconfig.CC, CCFLAGS = rtconfig.CFLAGS,
+    AR = rtconfig.AR, ARFLAGS = '-rc',
+    LINK = rtconfig.LINK, LINKFLAGS = rtconfig.LFLAGS)
+env.PrependENVPath('PATH', rtconfig.EXEC_PATH)
+
+if env['PLATFORM'] == 'win32':
+    env['ASCOM'] = '$AS $ASFLAGS $CCFLAGS $_CCCOMCOM -o $TARGET $SOURCES'
+
+Export('RTT_ROOT')
+Export('RTT_PLATFORM_ROOT')
+Export('SDK_ROOT')
+Export('APP_ROOT')
+Export('rtconfig')
+Export('RT_CONFIG_H')
+
+
+# if not GetOption( "clean" ):
+#     path = 'export PATH=$PATH:{}'.format(rtconfig.EXEC_PATH)
+#     print path
+#     subprocess.check_output(['/bin/sh', '-c', 'cd ../../solution/vbus_service; scons'])
+#     subprocess.check_output(['/bin/sh', '-c', 'cp ../../fh86xx-sdk/extlib/fh8830/lib/soft/rttc_8630.bin .'])
+#     subprocess.check_output(['/bin/sh', '-c', path + ';arm-none-eabi-objcopy -I binary -O elf32-littlearm rttc_8630.bin rttc_8630.o'])
+#     set_arch(0x28)
+#     subprocess.check_output(['/bin/sh', '-c', 'mv rttc_8630.o ../../fh86xx-sdk/extlib/fh8830/lib/soft/.'])
+
+# prepare building environment
+objs = PrepareBuilding(env, RTT_ROOT)
+objs += SConscript(APP_ROOT + '/SConscript_app',variant_dir='build/app', duplicate=0)
+if RTT_PLATFORM_ROOT != '':
+    rtt_platform_dir = RTT_PLATFORM_ROOT
+else:
+    rtt_platform_dir = SDK_ROOT
+objs += SConscript(rtt_platform_dir + '/SConscript',variant_dir='build/rt-thread', duplicate=0)
+
+if GetDepend('RT_USING_WEBSERVER'):
+    objs = objs + SConscript(RTT_ROOT + '/components/net/webserver/SConscript', variant_dir='build/net/webserver', duplicate=0)
+
+if GetDepend('RT_USING_RTGUI'):
+    objs = objs + SConscript(RTT_ROOT + '/examples/gui/SConscript', variant_dir='build/examples/gui', duplicate=0)
+
+# libc testsuite 
+objs = objs + SConscript(RTT_ROOT + '/examples/libc/SConscript', variant_dir='build/examples/libc', duplicate=0)
+
+# make a building
+DoBuilding(TARGET, objs)

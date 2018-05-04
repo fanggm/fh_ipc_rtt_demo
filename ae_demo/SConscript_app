@@ -1,0 +1,19 @@
+# RT-Thread building script for bridge
+
+import os
+from building import *
+Import('SDK_ROOT')
+
+cwd = GetCurrentDir()
+objs = []
+dir_list = os.listdir(cwd)
+dir_list.sort()
+
+for d in dir_list:
+    path = os.path.join(cwd, d)
+    if os.path.isfile(os.path.join(path, 'SConscript')):
+        objs = objs + SConscript(os.path.join(d, 'SConscript'))
+
+Return('objs')
+
+

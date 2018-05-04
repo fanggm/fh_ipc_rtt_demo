@@ -1,0 +1,21 @@
+Import('rtconfig')
+import os
+from building import *
+
+Import('SDK_ROOT')
+Import('APP_ROOT')
+
+path_inc = [APP_ROOT + '/common/inc'] 
+path_inc += [SDK_ROOT + '/extlib/inc']
+path_inc += [SDK_ROOT + '/extlib']
+path_inc += [SDK_ROOT + '/extlib/inc/isp']
+path_inc += [SDK_ROOT + '/extlib/inc/advapi']
+path_inc += [SDK_ROOT + '/components/sensor']
+
+path_inc += [SDK_ROOT]
+
+src	= Glob('*.c')
+
+group = DefineGroup('sdk_demo_isp', src, depend = [''], LOCAL_CPPPATH = path_inc)
+
+Return('group')
